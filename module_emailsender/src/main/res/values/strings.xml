@@ -1,7 +1,5 @@
 <resources>
     <string name="app_name">module_emailsender</string>
-    <string name="mine">我的</string>
-
     <string name="email_from">1041034306@qq.com</string>
     <string name="email_pwd">artklngwwwsfbbeh</string>
     <string name="email_auth">true</string>

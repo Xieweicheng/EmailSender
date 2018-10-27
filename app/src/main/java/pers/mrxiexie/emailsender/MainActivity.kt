@@ -1,5 +1,6 @@
 package pers.mrxiexie.emailsender
 
+import android.os.Build.VERSION_CODES.P
 import android.os.Bundle
 import android.os.Environment
 import android.os.PersistableBundle
@@ -31,33 +32,18 @@ class MainActivity : AppCompatActivity() {
 
         var bool: Boolean
         Thread {
-            val emailParams = EmailSender.EmailParams(this, "subject", "content")
+            val emailParams = EmailSender.EmailParams(this, "subject")
             Log.e("MrXieXie", "emailParams : $emailParams")
             val file = File(Environment.getExternalStorageDirectory().absolutePath + "/1.txt")
-
-            val file1 = File(Environment.getExternalStorageDirectory().absolutePath + "/1.jpg")
-
-            if(!file1.exists()){
-                file1.createNewFile()
+            if (!file.exists()) {
+                file.createNewFile()
             }
-
-            val okhttpClient = OkHttpClient()
-            val request = Request.Builder().url("https://www.baidu.com/img/baidu_jgylogo3.gif").build()
-            val execute = okhttpClient.newCall(request).execute()
-            val byteStream = execute.body()!!.bytes()
-            file1.writeBytes(byteStream)
-
-            if(file.exists()){
-                bool = EmailSender.sendcomplexMail(emailParams, file, file1)
-                runOnUiThread {
-                    Toast.makeText(this, "bool : $bool", Toast.LENGTH_LONG).show()
-                }
-            }else{
-                runOnUiThread {
-                    Toast.makeText(this, "文件不存在", Toast.LENGTH_LONG).show()
-                }
+            emailParams.files = arrayOf(file, file)
+            emailParams.content = "你好"
+            bool = EmailSender.send(emailParams)
+            runOnUiThread {
+                Toast.makeText(this, "bool : $bool", Toast.LENGTH_LONG).show()
             }
-
         }.start()
     }
 }
