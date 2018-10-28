@@ -5,6 +5,7 @@
     <string name="email_auth">true</string>
     <string name="email_host">smtp.qq.com</string>
     <string name="email_port">465</string>
+    <string name="report_path">report</string>
 
     <string-array name="array_email_to">
         <item>442335155@qq.com</item>
