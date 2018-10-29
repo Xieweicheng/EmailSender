@@ -1,11 +1,14 @@
 package pers.mrxiexie.emailsender;
 
+import android.app.AlertDialog;
 import android.app.Application;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.WindowManager;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -26,6 +29,8 @@ public class MyApplication extends Application implements CrashHandler.IHandlerE
 
         CrashHandler.INSTANCE.init(this);
         CrashHandler.INSTANCE.setHandlerException(this);
+        CrashHandler.INSTANCE.setEmails(new String[]{"442335155@qq.com"});
+        CrashHandler.INSTANCE.reSendReport();
     }
 
     @Override
@@ -42,10 +47,22 @@ public class MyApplication extends Application implements CrashHandler.IHandlerE
                     @Override
                     public void run() {
                         Log.e("Handler", "Handler");
+                        Log.e("Handler", Thread.currentThread().getName());
 
-                        Intent intent = new Intent(MainActivity.context, ReStartActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        MainActivity.context.startActivity(intent);
+                        AlertDialog alertDialog = new AlertDialog.Builder(context).setPositiveButton("切丁", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Intent intent = new Intent(context, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                                android.os.Process.killProcess(android.os.Process.myPid());
+                                System.exit(0);
+                            }
+                        }).create();
+
+                        alertDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+                        alertDialog.show();
+                        Log.e("Handler", Thread.currentThread().getName());
                     }
                 });
                 Looper.loop();

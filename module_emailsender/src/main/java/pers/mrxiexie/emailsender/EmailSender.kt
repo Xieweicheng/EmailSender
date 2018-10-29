@@ -3,6 +3,7 @@ package pers.mrxiexie.emailsender
 import android.content.Context
 import android.text.TextUtils
 import java.io.File
+import java.lang.Exception
 import java.util.*
 import javax.activation.CommandMap
 import javax.activation.DataHandler
@@ -64,7 +65,7 @@ object EmailSender {
 
         try {
             Transport.send(EmailSender.message)
-        } catch (e: MessagingException) {
+        } catch (e: Exception) {
             //发送失败
             return false
         }

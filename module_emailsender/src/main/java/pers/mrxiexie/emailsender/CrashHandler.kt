@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
-import android.os.Looper
 import android.util.Log
 import java.io.File
 import java.io.PrintWriter
@@ -13,12 +12,15 @@ import java.io.StringWriter
 import java.io.Writer
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.FutureTask
 
 @SuppressLint("StaticFieldLeak")
 /**
  * 异常处理
  */
 object CrashHandler : Thread.UncaughtExceptionHandler {
+
+    private const val TAG = "CrashHandler"
 
     private var tip: String = "emmmmmm... 系统出了点故障"
 
@@ -28,6 +30,14 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
 
     private lateinit var context: Context
 
+    /**
+     * 邮箱列表
+     */
+    lateinit var emails: Array<String>
+
+    /**
+     * 异常日志发送邮件失败时，保存的文件路径
+     */
     lateinit var reportPath: String
 
     /**
@@ -45,58 +55,16 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         val result = getStringFromThrowable(e)
         if (impl == null) {
             defaultProcessingException(result)
+            Thread.sleep(1000)
+            //退出程序
+            android.os.Process.killProcess(android.os.Process.myPid());
+            System.exit(0)
         } else {
             if (!impl!!.isDisableDefaultProcessing()) {
                 defaultProcessingException(result)
             }
             customizeProcessingException(impl!!, result)
         }
-
-        Thread.sleep(1000)
-        //退出程序
-        android.os.Process.killProcess(android.os.Process.myPid());
-        System.exit(0)
-        Thread {
-            Looper.prepare()
-
-            /* Log.e("Crash", "Looper")
-             Handler(Looper.getMainLooper()).post{
-
-                 Log.e("Crash", "post")
-                 val dialog = AlertDialog.Builder(context)
-                         .setTitle(tip)
-                         .setMessage(msg)
-                         .setPositiveButton("离开App") { _, _ ->
-                             android.os.Process.killProcess(android.os.Process.myPid())
-                             System.exit(1)
-                         }
-                         .create()
-//                dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
-                 dialog.show()
-                 Log.e("Crash", "show")
-             }*/
-            Looper.loop()
-        }.start()
-        /* if (e != null) {
-             Log.e("Crash", "e")
-
-             defaultHandler.uncaughtException(t, e)
-         } else {
-             Log.e("Crash", "prepare")
-             Looper.prepare()
-             val dialog = AlertDialog.Builder(context)
-                     .setTitle(tip)
-                     .setMessage(msg)
-                     .setPositiveButton("离开App") { _, _ ->
-                         android.os.Process.killProcess(android.os.Process.myPid())
-                         System.exit(1)
-                     }
-                     .create()
-             dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
-             dialog.show()
-             Looper.loop()
-         }*/
-
     }
 
     fun init(context: Context) {
@@ -131,16 +99,24 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
     private fun defaultProcessingException(result: String) {
         val params = EmailSender.EmailParams(
                 context,
-                catchMessage())
+                catchMessage(),
+                emails)
         params.content = result
         //发送失败则把错误信息写到SD卡上，当有网络的时候重新发送。
-        Thread {
+
+        val futureTask = FutureTask<Boolean> {
+            Log.e("EmailSender", "start")
             if (!EmailSender.send(params)) {
-                Log.e("EmailSender", "false")
+                Log.e(TAG, "发送邮件失败，把异常写入${reportPath}中")
                 writeReport(result)
+            } else {
+                Log.e(TAG, "发送邮箱成功")
             }
-            Log.e("EmailSender", "true")
-        }.start()
+            true
+        }
+
+        Thread(futureTask).start()
+        futureTask.get()
     }
 
     /**
@@ -148,6 +124,10 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
      */
     private fun writeReport(cause: String) {
         if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED) {
+            val dir = File(reportPath)
+            if (!dir.exists()) {
+                dir.mkdirs()
+            }
             val report = File(reportPath + File.separator + catchMessage())
             report.writeText(cause)
         }
@@ -157,18 +137,25 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
      * 发送失败的邮件，重新发送
      */
     fun reSendReport() {
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            val file = File(reportPath)
-            if (!file.exists()) {
-                return
+        Thread {
+            if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+                val file = File(reportPath)
+                if (!file.exists() || file.listFiles().isEmpty()) {
+                    return@Thread
+                }
+                val reportFiles = file.listFiles()
+                val emailParams = EmailSender.EmailParams(
+                        context,
+                        "reSendReport",
+                        emails)
+                emailParams.files = reportFiles
+                if (EmailSender.send(emailParams)) {
+                    reportFiles.forEach { it.delete() }
+                } else {
+                    Log.e(TAG, "重新发送邮件失败")
+                }
             }
-            val reportFiles = file.listFiles()
-            val emailParams = EmailSender.EmailParams(context, "reSendReport")
-            emailParams.files = reportFiles
-            if (EmailSender.send(emailParams)) {
-                reportFiles.forEach { it.delete() }
-            }
-        }
+        }.start()
     }
 
     private fun catchMessage(): String {
@@ -223,9 +210,15 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
 
     @FunctionalInterface
     interface IHandlerException {
+
+        /**
+         * 自定义异常处理
+         */
         fun customizeProcessingException(cause: String)
 
+        /**
+         * 是否禁止默认异常处理（若不禁止，则先使用默认处理再使用自定义处理）
+         */
         fun isDisableDefaultProcessing(): Boolean
     }
-
 }

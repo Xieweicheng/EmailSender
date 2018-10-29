@@ -24,6 +24,9 @@ open class MainActivity : AppCompatActivity() {
         context = this
         setContentView(textView)
 
+        Log.e("MainActivity", "onCreate")
+
+
         toast(Thread.currentThread().name)
 
 //        val random = Math.random() * 10
