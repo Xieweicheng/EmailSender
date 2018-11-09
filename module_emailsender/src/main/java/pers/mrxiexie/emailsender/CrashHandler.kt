@@ -140,7 +140,7 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         Thread {
             if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
                 val file = File(reportPath)
-                if (!file.exists() || file.listFiles().isEmpty()) {
+                if (!file.exists() || file.listFiles() == null || file.listFiles().isEmpty()) {
                     return@Thread
                 }
                 val reportFiles = file.listFiles()
