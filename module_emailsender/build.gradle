@@ -26,7 +26,6 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
 //    implementation 'com.android.support:appcompat-v7:28.0.0'
 //    testImplementation 'junit:junit:4.12'
@@ -38,9 +37,9 @@ dependencies {
 
 //    api("javax.mail:javax.mail-api:1.5.6")
 //    api("com.sun.mail:javax.mail:1.5.6")
-    compile files('libs/mail.jar')
 
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar'], exclude: [])
 }
 repositories {
     mavenCentral()

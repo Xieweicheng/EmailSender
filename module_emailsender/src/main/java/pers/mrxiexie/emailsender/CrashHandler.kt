@@ -172,13 +172,12 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
 
         val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH-mm-SS", Locale.CHINA)
 
-        return " version_code = " + version_code +
-                " version_name = " + version_name +
-                " SDK_INT = " + Build.VERSION.SDK_INT +
-                " RELEASE = " + Build.VERSION.RELEASE +
-                " DEVICE = " + Build.DEVICE +
-                " DISPLAY = " + Build.VERSION.RELEASE +
-                " CURRENT_TIME = " + simpleDateFormat.format(Date())
+        return "版本号：" + version_code +
+                " 版本名：" + version_name +
+                " SDK版本：" + Build.VERSION.SDK_INT +
+                " 版本：" + Build.VERSION.RELEASE +
+                " 设备：" + Build.DEVICE +
+                " 当前时间：" + simpleDateFormat.format(Date())
     }
 
     /**
